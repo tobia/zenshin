@@ -17,6 +17,7 @@ const DEVELOPMENT = process.env.NODE_ENV === 'development'
 
 const ALPHAS = [0.5, 0.25]
 const MAX_LEVEL = 60
+const MAX_YEARS_FORECAST = 3
 
 document.addEventListener('DOMContentLoaded', main)
 
@@ -57,15 +58,23 @@ async function fetchData(apiKey) {
 
 async function processData(data) {
   const { data: levels } = data
-  const history = levels.map(({ data: { level, unlocked_at } }) => ({
+  let history = levels.map(({ data: { level, unlocked_at } }) => ({
     x: parseISO(unlocked_at),
     y: level - 1,
   }))
+  const { data: last } = levels[levels.length - 1]
+  if (last.passed_at) {
+    history.push({
+      x: parseISO(last.passed_at),
+      y: last.level,
+    })
+  }
   const forecasts = computeForecasts(history)
-  const historyGaps = history.flatMap((item, i) =>
+  // add a gap in the chart whenever a user restarts Wanikani
+  history = history.flatMap((item, i) =>
     i > 0 && item.y < history[i - 1].y ? [{}, item] : [item]
   )
-  makeChart(historyGaps, forecasts)
+  makeChart(history, forecasts)
 }
 
 function computeForecasts(history) {
@@ -101,7 +110,9 @@ function makeChart(history, forecasts) {
               maxRotation: 0,
               autoSkipPadding: 20,
               min: startOfMonth(begin),
-              max: endOfMonth(minDates([limit, addYears(last, 2)])),
+              max: endOfMonth(
+                minDates([limit, addYears(last, MAX_YEARS_FORECAST)])
+              ),
             },
           },
         ],
@@ -157,7 +168,7 @@ function makeChart(history, forecasts) {
           lineTension: 0,
         }))
         .concat({
-          label: 'Started level',
+          label: 'Level',
           data: history,
           lineTension: 0,
           backgroundColor: 'rgba(0, 127, 255, 0.5)',
