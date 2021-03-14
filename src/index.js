@@ -120,7 +120,7 @@ function makeChart(history, forecasts) {
           {
             scaleLabel: {
               display: true,
-              labelString: 'Level',
+              labelString: 'Level completed',
               fontSize: 14,
             },
             ticks: {
@@ -168,7 +168,7 @@ function makeChart(history, forecasts) {
           lineTension: 0,
         }))
         .concat({
-          label: 'Level',
+          label: 'Level completed',
           data: history,
           lineTension: 0,
           backgroundColor: 'rgba(0, 127, 255, 0.5)',
