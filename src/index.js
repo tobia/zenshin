@@ -9,8 +9,8 @@ import {
   startOfMonth,
   endOfMonth,
   addYears,
-  min,
-  max,
+  min as minDates,
+  max as maxDates,
 } from 'date-fns'
 
 const DEVELOPMENT = process.env.NODE_ENV === 'development'
@@ -62,7 +62,10 @@ async function processData(data) {
     y: level - 1,
   }))
   const forecasts = computeForecasts(history)
-  makeChart(history, forecasts)
+  const historyGaps = history.flatMap((item, i) =>
+    i > 0 && item.y < history[i - 1].y ? [{}, item] : [item]
+  )
+  makeChart(historyGaps, forecasts)
 }
 
 function computeForecasts(history) {
@@ -86,7 +89,7 @@ function computeForecasts(history) {
 function makeChart(history, forecasts) {
   const begin = history[0].x
   const last = history[history.length - 1].x
-  const limit = forecasts.reduce((acc, fc) => max(acc, fc[1].x))
+  const limit = maxDates(forecasts.map((fc) => fc[1].x))
   new Chart('chart', {
     type: 'line',
     options: {
@@ -98,7 +101,7 @@ function makeChart(history, forecasts) {
               maxRotation: 0,
               autoSkipPadding: 20,
               min: startOfMonth(begin),
-              max: endOfMonth(min(limit, addYears(last, 2))),
+              max: endOfMonth(minDates([limit, addYears(last, 2)])),
             },
           },
         ],
