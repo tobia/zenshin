@@ -11,7 +11,10 @@
     "parcel": "^2.0.0-beta.1"
   },
   "scripts": {
-    "start": "parcel src/index.html",
-    "build": "parcel build src/index.html"
-  }
+    "start": "parcel src/index.html --dist-dir docs --public-url ./",
+    "build": "parcel build src/index.html --dist-dir docs --public-url ./"
+  },
+  "browserslist": [
+    "since 2017-06"
+  ]
 }
