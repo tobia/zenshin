@@ -2,9 +2,11 @@ import axios from 'axios'
 import Chart from 'chart.js'
 import 'chartjs-adapter-date-fns'
 import 'chartjs-plugin-annotation'
+import { saveAs } from 'file-saver'
 import {
   parseISO,
   differenceInHours,
+  differenceInMonths,
   addHours,
   startOfMonth,
   endOfMonth,
@@ -18,8 +20,20 @@ const DEVELOPMENT = process.env.NODE_ENV === 'development'
 const ALPHAS = [0.5, 0.25]
 const MAX_LEVEL = 60
 const MAX_YEARS_FORECAST = 3
+const GAP_MONTHS = 6
+const SKIP_MONTHS = 3
 
 document.addEventListener('DOMContentLoaded', main)
+
+Chart.pluginService.register({
+  beforeDraw: function (chart, easing) {
+    const ctx = chart.chart.ctx
+    ctx.save()
+    ctx.fillStyle = 'white'
+    ctx.fillRect(0, 0, chart.canvas.width, chart.canvas.height)
+    ctx.restore()
+  },
+})
 
 async function main() {
   document.getElementById('submitKey').addEventListener('submit', submitKey)
@@ -38,6 +52,12 @@ async function submitKey(event) {
   if (!data) return
   localStorage.setItem('api-key', apiKey)
   processData(data)
+}
+
+function download() {
+  document.getElementById('chart').toBlob((blob) => {
+    saveAs(blob, 'zenshin.png')
+  })
 }
 
 async function fetchData(apiKey) {
@@ -70,22 +90,35 @@ async function processData(data) {
     })
   }
   const forecasts = computeForecasts(history)
-  // add a gap in the chart whenever a user restarts Wanikani
-  history = history.flatMap((item, i) =>
-    i > 0 && item.y < history[i - 1].y ? [{}, item] : [item]
-  )
+  // add a gap in the chart whenever a user restarts Wanikani, or when there is
+  // a pause longer than GAP_MONTHS months
+  history = history.flatMap((item, i) => {
+    if (i == 0) return [item]
+    const prev = history[i - 1]
+    if (item.y < prev.y) return [{}, item]
+    if (differenceInMonths(item.x, prev.x) >= GAP_MONTHS) return [{}, item]
+    return [item]
+  })
   makeChart(history, forecasts)
 }
 
 function computeForecasts(history) {
   let avgHours = [null, null]
   for (let i = 1; i < history.length; ++i) {
-    const hours = differenceInHours(history[i].x, history[i - 1].x)
-    avgHours.forEach((old, i) => {
-      const alpha = ALPHAS[i]
-      if (old) avgHours[i] = alpha * hours + (1 - alpha) * old
-      else avgHours[i] = hours
-    })
+    const cur = history[i].x
+    const prev = history[i - 1].x
+    const hours = differenceInHours(cur, prev)
+    const months = differenceInMonths(cur, prev)
+    if (cur && prev && months < SKIP_MONTHS) {
+      avgHours.forEach((old, i) => {
+        if (!old) {
+          avgHours[i] = hours
+        } else {
+          const alpha = ALPHAS[i]
+          avgHours[i] = alpha * hours + (1 - alpha) * old
+        }
+      })
+    }
   }
   const last = history[history.length - 1]
   const levelsToDo = MAX_LEVEL - last.y
@@ -176,4 +209,7 @@ function makeChart(history, forecasts) {
         }),
     },
   })
+  const dlButton = document.getElementById('download')
+  dlButton.style.display = 'inline'
+  dlButton.addEventListener('click', download)
 }
