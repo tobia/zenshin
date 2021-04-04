@@ -36,6 +36,11 @@ p {
   margin: 0 1rem;
 }
 
+span.sm-line.dashed::before {
+  content: '\2013';
+  padding: 0 0.5rem;
+}
+
 #key {
   font-family: monospace;
   width: 21.5em;
@@ -80,5 +85,11 @@ p {
   span.sm-line {
     display: block;
     margin: 0.25rem 1rem;
+  }
+  span.sm-line.dashed {
+    margin: 1rem;
+  }
+  span.sm-line.dashed::before {
+    display: none;
   }
 }

@@ -46,23 +46,37 @@ const SKIP_MONTHS = 3
 
 document.addEventListener('DOMContentLoaded', main)
 
+let data
+let chart
+
 async function main() {
-  document.getElementById('submitKey').addEventListener('submit', submitKey)
+  const submitKey = document.getElementById('submitKey')
+  const startDate = document.getElementById('startDate')
+  submitKey.addEventListener('submit', submitKey)
+  startDate.addEventListener('change', changeStart)
+  startDate.value = localStorage.getItem('start-date')
   const apiKey = localStorage.getItem('api-key')
   if (apiKey) {
     document.getElementById('key').value = apiKey
-    const data = await fetchData(apiKey)
-    processData(data)
+    data = await fetchData(apiKey)
+    if (!data) return
+    processData()
   }
+}
+
+function changeStart(event) {
+  const startDateStr = document.getElementById('startDate').value
+  localStorage.setItem('start-date', startDateStr)
+  if (data) processData()
 }
 
 async function submitKey(event) {
   event.preventDefault()
   const apiKey = document.getElementById('key').value
-  const data = await fetchData(apiKey)
+  data = await fetchData(apiKey)
   if (!data) return
   localStorage.setItem('api-key', apiKey)
-  processData(data)
+  processData()
 }
 
 function download() {
@@ -87,12 +101,17 @@ async function fetchData(apiKey) {
   return resp.data
 }
 
-async function processData(data) {
+async function processData() {
   const { data: levels } = data
   let history = levels.map(({ data: { level, unlocked_at } }) => ({
     x: parseISO(unlocked_at),
     y: level - 1,
   }))
+  const startDateStr = document.getElementById('startDate').value
+  const startDate = startDateStr
+    ? maxDates([parseISO(startDateStr), history[0].x])
+    : history[0].x
+  history = history.filter(({ x }) => x >= startDate)
   const { data: last } = levels[levels.length - 1]
   if (last.passed_at) {
     history.push({
@@ -159,7 +178,8 @@ function makeChart(history, forecasts, speed) {
   const begin = history[0].x
   const last = history[history.length - 1].x
   const limit = maxDates(forecasts.map((fc) => fc[1].x))
-  new Chart('chart', {
+  if (chart) chart.destroy()
+  chart = new Chart('chart', {
     type: 'line',
     options: {
       scales: {
@@ -289,7 +309,6 @@ function makeChart(history, forecasts, speed) {
         ),
     },
   })
-  const dlButton = document.getElementById('download')
-  dlButton.style.display = 'inline'
-  dlButton.addEventListener('click', download)
+  document.getElementById('bottom').style.display = 'block'
+  document.getElementById('download').addEventListener('click', download)
 }
