@@ -1,3 +1,5 @@
+'use strict'
+
 import axios from 'axios'
 import Chart from 'chart.js'
 import 'chartjs-adapter-date-fns'
@@ -6,6 +8,7 @@ import { saveAs } from 'file-saver'
 import {
   parseISO,
   differenceInHours,
+  differenceInDays,
   differenceInMonths,
   addHours,
   startOfMonth,
@@ -24,16 +27,6 @@ const GAP_MONTHS = 6
 const SKIP_MONTHS = 3
 
 document.addEventListener('DOMContentLoaded', main)
-
-Chart.pluginService.register({
-  beforeDraw: function (chart, easing) {
-    const ctx = chart.chart.ctx
-    ctx.save()
-    ctx.fillStyle = 'white'
-    ctx.fillRect(0, 0, chart.canvas.width, chart.canvas.height)
-    ctx.restore()
-  },
-})
 
 async function main() {
   document.getElementById('submitKey').addEventListener('submit', submitKey)
@@ -99,7 +92,19 @@ async function processData(data) {
     if (differenceInMonths(item.x, prev.x) >= GAP_MONTHS) return [{}, item]
     return [item]
   })
-  makeChart(history, forecasts)
+  // compute speed
+  const speed = history.flatMap((item, i) => {
+    if (i == 0) return []
+    if (item.x === undefined) return [{}] // propagate history gap into speed gap
+    if (item.y < 3) return []
+    const prev = history[i - 1]
+    if (prev.x === undefined) return [] // skip first node after a gap
+    const dx_months = differenceInDays(item.x, prev.x) / 30
+    const dy_levels = item.y - prev.y
+    const avg_x = avgDate(prev.x, item.x)
+    return { x: avg_x, y: dy_levels / dx_months }
+  })
+  makeChart(history, forecasts, speed)
 }
 
 function computeForecasts(history) {
@@ -128,7 +133,11 @@ function computeForecasts(history) {
   ])
 }
 
-function makeChart(history, forecasts) {
+function avgDate(a, b) {
+  return new Date((a.getTime() + b.getTime()) / 2)
+}
+
+function makeChart(history, forecasts, speed) {
   const begin = history[0].x
   const last = history[history.length - 1].x
   const limit = maxDates(forecasts.map((fc) => fc[1].x))
@@ -136,47 +145,55 @@ function makeChart(history, forecasts) {
     type: 'line',
     options: {
       scales: {
-        xAxes: [
-          {
-            type: 'time',
-            ticks: {
-              maxRotation: 0,
-              autoSkipPadding: 20,
-              min: startOfMonth(begin),
-              max: endOfMonth(
-                minDates([limit, addYears(last, MAX_YEARS_FORECAST)])
-              ),
+        x: {
+          type: 'time',
+          ticks: {
+            maxRotation: 0,
+            autoSkipPadding: 20,
+            min: startOfMonth(begin),
+            max: endOfMonth(
+              minDates([limit, addYears(last, MAX_YEARS_FORECAST)])
+            ),
+          },
+        },
+        level: {
+          position: 'left',
+          title: {
+            display: true,
+            text: 'Level completed',
+            color: 'rgb(0, 127, 255)',
+            font: {
+              size: 14,
+              weight: 'bold',
             },
           },
-        ],
-        yAxes: [
-          {
-            scaleLabel: {
-              display: true,
-              labelString: 'Level completed',
-              fontSize: 14,
-            },
-            ticks: {
-              min: 0,
-              max: 60,
+          min: 0,
+          max: 60,
+          ticks: {
+            count: 7,
+          },
+        },
+        speed: {
+          position: 'right',
+          grace: '50%',
+          title: {
+            display: true,
+            text: 'Completion speed (levels per month)',
+            color: 'rgb(223, 0, 0)',
+            font: {
+              size: 14,
+              weight: 'bold',
             },
           },
-        ],
-      },
-      annotation: {
-        annotations: [
-          {
-            type: 'line',
-            mode: 'vertical',
-            scaleID: 'x-axis-0',
-            value: new Date(),
-            borderColor: 'red',
-            borderWidth: 1,
+          min: 0,
+          max: 6,
+          ticks: {
+            count: 7,
           },
-        ],
-      },
-      legend: {
-        display: false,
+          grid: {
+            drawOnChartArea: false,
+          },
+        },
       },
       layout: {
         padding: {
@@ -186,27 +203,72 @@ function makeChart(history, forecasts) {
           bottom: 20,
         },
       },
+      plugins: {
+        legend: {
+          display: false,
+        },
+        annotation: {
+          annotations: [
+            {
+              type: 'line',
+              xMin: new Date(),
+              xMax: new Date(),
+              borderColor: 'rgba(223, 0, 0, 0.5)',
+              borderWidth: 2,
+            },
+          ],
+        },
+      },
     },
+    plugins: [
+      {
+        beforeDraw(chart) {
+          const ctx = chart.canvas.getContext('2d')
+          ctx.save()
+          ctx.globalCompositeOperation = 'destination-over'
+          ctx.fillStyle = 'white'
+          ctx.fillRect(0, 0, chart.width, chart.height)
+          ctx.restore()
+        },
+      },
+    ],
     data: {
       datasets: forecasts
         .map((data) => ({
           label: '(forecast)',
           data,
-          backgroundColor: 'rgba(0, 0, 0, 0.0667)',
+          yAxisID: 'level',
           pointRadius: 0,
           pointHitRadius: 0,
           borderWidth: 2,
-          borderColor: 'rgba(0, 0, 0, 0.25)',
+          borderColor: 'rgba(0, 0, 0, 0.2)',
           borderDash: [10, 10],
           lineTension: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.0333)',
+          fill: 'start',
         }))
-        .concat({
-          label: 'Level completed',
-          data: history,
-          lineTension: 0,
-          backgroundColor: 'rgba(0, 127, 255, 0.5)',
-          borderColor: 'rgba(0, 127, 255, 0.5)',
-        }),
+        .concat(
+          {
+            label: 'Level completed',
+            data: history,
+            yAxisID: 'level',
+            lineTension: 0,
+            borderColor: 'rgba(0, 127, 255, 0.5)',
+            backgroundColor: 'rgba(0, 127, 255, 0.5)',
+            fill: 'start',
+          },
+          {
+            label: 'Completion speed',
+            data: speed,
+            yAxisID: 'speed',
+            lineTension: 0.4,
+            pointRadius: 0,
+            pointHitRadius: 0,
+            backgroundColor: 'transparent',
+            borderColor: 'rgba(223, 0, 0, 0.5)',
+            borderWidth: 2,
+          }
+        ),
     },
   })
   const dlButton = document.getElementById('download')
