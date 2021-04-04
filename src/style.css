@@ -43,7 +43,8 @@ span.sm-line.dashed::before {
 
 #key {
   font-family: monospace;
-  width: 21.5em;
+  width: 22em;
+  text-align: center;
 }
 
 #chart-scroller {

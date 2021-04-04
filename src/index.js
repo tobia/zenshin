@@ -50,13 +50,14 @@ let data
 let chart
 
 async function main() {
-  const submitKey = document.getElementById('submitKey')
+  const submitForm = document.getElementById('submitForm')
   const startDate = document.getElementById('startDate')
-  submitKey.addEventListener('submit', submitKey)
+  submitForm.addEventListener('submit', submitKey)
   startDate.addEventListener('change', changeStart)
   startDate.value = localStorage.getItem('start-date')
-  const apiKey = localStorage.getItem('api-key')
+  let apiKey = localStorage.getItem('api-key')
   if (apiKey) {
+    apiKey = apiKey.replace(/[^\w-]/g, '') // weird bug, some users have spaces?
     document.getElementById('key').value = apiKey
     data = await fetchData(apiKey)
     if (!data) return
