@@ -1,9 +1,17 @@
 'use strict'
 
 import axios from 'axios'
-import { Chart } from 'chart.js'
+import {
+  Chart,
+  LineController,
+  Filler,
+  LineElement,
+  PointElement,
+  LinearScale,
+  TimeScale,
+} from 'chart.js'
 import 'chartjs-adapter-date-fns'
-import 'chartjs-plugin-annotation'
+import AnnotationPlugin from 'chartjs-plugin-annotation'
 import { saveAs } from 'file-saver'
 import {
   parseISO,
@@ -17,6 +25,16 @@ import {
   min as minDates,
   max as maxDates,
 } from 'date-fns'
+
+Chart.register(
+  LineController,
+  Filler,
+  LineElement,
+  PointElement,
+  LinearScale,
+  TimeScale,
+  AnnotationPlugin,
+)
 
 const DEVELOPMENT = process.env.NODE_ENV === 'development'
 
@@ -152,7 +170,7 @@ function makeChart(history, forecasts, speed) {
             autoSkipPadding: 20,
             min: startOfMonth(begin),
             max: endOfMonth(
-              minDates([limit, addYears(last, MAX_YEARS_FORECAST)])
+              minDates([limit, addYears(last, MAX_YEARS_FORECAST)]),
             ),
           },
         },
@@ -178,7 +196,7 @@ function makeChart(history, forecasts, speed) {
           grace: '50%',
           title: {
             display: true,
-            text: 'Completion speed (levels per month)',
+            text: 'Speed (levels per month)',
             color: 'rgb(223, 0, 0)',
             font: {
               size: 14,
@@ -258,7 +276,7 @@ function makeChart(history, forecasts, speed) {
             fill: 'start',
           },
           {
-            label: 'Completion speed',
+            label: 'Speed',
             data: speed,
             yAxisID: 'speed',
             lineTension: 0.4,
@@ -267,7 +285,7 @@ function makeChart(history, forecasts, speed) {
             backgroundColor: 'transparent',
             borderColor: 'rgba(223, 0, 0, 0.5)',
             borderWidth: 2,
-          }
+          },
         ),
     },
   })
