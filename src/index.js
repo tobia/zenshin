@@ -288,15 +288,6 @@ function makeChart(history, forecasts, speed) {
         }))
         .concat(
           {
-            label: 'Level completed',
-            data: history,
-            yAxisID: 'level',
-            lineTension: 0,
-            borderColor: 'rgba(0, 127, 255, 0.5)',
-            backgroundColor: 'rgba(0, 127, 255, 0.5)',
-            fill: 'start',
-          },
-          {
             label: 'Speed',
             data: speed,
             yAxisID: 'speed',
@@ -306,6 +297,15 @@ function makeChart(history, forecasts, speed) {
             backgroundColor: 'transparent',
             borderColor: 'rgba(223, 0, 0, 0.5)',
             borderWidth: 2,
+          },
+          {
+            label: 'Level completed',
+            data: history,
+            yAxisID: 'level',
+            lineTension: 0,
+            borderColor: 'rgba(0, 127, 255, 0.5)',
+            backgroundColor: 'rgba(0, 127, 255, 0.5)',
+            fill: 'start',
           },
         ),
     },
