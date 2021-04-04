@@ -1,7 +1,7 @@
 'use strict'
 
 import axios from 'axios'
-import Chart from 'chart.js'
+import { Chart } from 'chart.js'
 import 'chartjs-adapter-date-fns'
 import 'chartjs-plugin-annotation'
 import { saveAs } from 'file-saver'
