@@ -17,11 +17,16 @@
         and estimate a forecast.
       </p>
       <form id="submitKey" action>
-        Enter your API key: <input id="key" /><button type="submit">OK</button>
-        &nbsp; (You can obtain one
-        <a href="https://www.wanikani.com/settings/personal_access_tokens"
-          >here</a
-        >.)
+        <span class="sm-line"> Enter your API key:</span>
+        <span class="sm-line">
+          <input id="key" /><button type="submit">OK</button>
+        </span>
+        <span class="sm-line">
+          You can get one
+          <a href="https://www.wanikani.com/settings/personal_access_tokens"
+            >here</a
+          >.
+        </span>
       </form>
       <div id="chart-scroller">
         <div id="chart-container">
@@ -32,7 +37,7 @@
     </main>
     <footer>
       This website does not steal your API key. It is only stored locally in
-      your browser and used to generate the chart. Please check the
+      your browser and used to generate the chart. Feel free to check the
       <a href="https://github.com/tobia/zenshin">source code on Github</a>.
     </footer>
     <script src="./index.js"></script>

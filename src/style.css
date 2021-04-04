@@ -17,28 +17,32 @@ main {
 }
 
 footer {
-  font-size: 15px;
+  font-size: 14px;
   flex-shrink: 0;
-  padding-bottom: 1.5em;
-  margin: 0 1.5em;
+  margin: 0 1rem;
+  padding: 1rem 0;
 }
 
 h1 {
-  margin: 1em 0 0.5em 0;
+  margin: 1rem 1rem 0.5rem 1rem;
   font-weight: normal;
 }
 
 h1 + p {
-  margin: 1.5em 0;
+  margin: 1.5rem 1rem;
+}
+
+p {
+  margin: 0 1rem;
 }
 
 #key {
   font-family: monospace;
-  width: 22em;
+  width: 21.5em;
 }
 
 #chart-scroller {
-  margin: 1.5em;
+  margin: 1.5rem;
   overflow: auto;
 }
 
@@ -55,19 +59,26 @@ h1 + p {
 
 @media (max-width: 1400px) {
   #chart-container {
-    max-width: calc(90vw - 3em);
+    max-width: calc(90vw - 3rem);
   }
 }
 
 @media (max-width: 1200px) {
   #chart-container {
-    max-width: calc(100vw - 3em);
+    max-width: calc(100vw - 3rem);
   }
 }
 
 @media (max-width: 1024px) {
   #chart-container {
-    min-width: calc(1023px - 3em);
+    min-width: calc(1023px - 3rem);
     max-width: none;
+  }
+}
+
+@media (max-width: 768px) {
+  span.sm-line {
+    display: block;
+    margin: 0.25rem 1rem;
   }
 }
