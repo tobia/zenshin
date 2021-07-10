@@ -87,23 +87,44 @@ function download() {
 }
 
 async function fetchData(apiKey) {
+  // if development, use cached data
   if (DEVELOPMENT) {
     const cached = localStorage.getItem('cached-data')
     if (cached) return JSON.parse(cached)
   }
-  const resp = await axios({
-    url: 'level_progressions',
-    baseURL: 'https://api.wanikani.com/v2/',
+
+  // fetch level progressions
+  const levels_resp = await axios({
+    url: 'https://api.wanikani.com/v2/level_progressions',
     headers: { Authorization: `Bearer ${apiKey}` },
   })
-  if (DEVELOPMENT) {
-    localStorage.setItem('cached-data', JSON.stringify(resp.data))
+  const levels = levels_resp.data.data
+
+  // fetch burned
+  const burned = []
+  let burned_url = 'https://api.wanikani.com/v2/assignments?burned=true'
+  while (burned_url) {
+    const burned_resp = await axios({
+      url: burned_url,
+      headers: { Authorization: `Bearer ${apiKey}` },
+    })
+    burned.push(...burned_resp.data.map((it) => parseISO(it.data.burned_at)))
+    burned_url = burned_resp.pages.next_url
   }
-  return resp.data
+  burned.sort()
+
+  // full data
+  const data = { levels, burned }
+
+  // if development, save data to cache
+  if (DEVELOPMENT) {
+    localStorage.setItem('cached-data', JSON.stringify(data))
+  }
+  return data
 }
 
 async function processData() {
-  const { data: levels } = data
+  const { levels } = data
   let history = levels.map(({ data: { level, unlocked_at } }) => ({
     x: parseISO(unlocked_at),
     y: level - 1,
